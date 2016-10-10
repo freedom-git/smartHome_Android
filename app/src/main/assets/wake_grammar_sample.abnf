@@ -1,0 +1,10 @@
+#ABNF 1.0 UTF-8;
+language zh-CN; 
+mode voice;
+
+root $main;
+$main = $call $open $music|$call $next;
+$call = 小兔崽子|hello freedom|芝麻开门|妈咪妈咪哄;
+$open = 打开|播放|来点|放|play;
+$music = 音乐|歌曲|music|歌|歌儿;
+$next = 换歌|下一首|下一曲|next|next music;

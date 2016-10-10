@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_id">57f314f0</string>
+    <string name="app_name">Smart Home</string>
+    <string name="action_settings">Settings</string>
+    <string name="edit_message">Enter a message</string>
+    <string name="button_send">Send</string>
+    <string name="title_activity_display_message">My Message</string>
+    <string formatted="false" name="tts_toast_format">缓冲进度为%d%%，播放进度为%d%%</string>
+    <string name="voicer">catherine</string>
+    <string name="welcome_voice">Hello,freedom,nice to see you again!</string>
+    <string name="music_start_voice">music started</string>
+    <string name="music_pause_voice">music paused</string>
+</resources>
