@@ -21,6 +21,7 @@ public class MyMediaPlayer implements MediaPlayer.OnPreparedListener,MediaPlayer
     public MyActivity myActivity;
     public MyMediaPlayer(MyActivity activity){
         myActivity=activity;
+        myActivity.addLogToScreen("音乐播放模块初始化...");
     }
     /** Called when MediaPlayer is ready */
     @Override

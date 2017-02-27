@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_id">57f314f0</string>
+    <string name="app_id">5844c58b</string>
     <string name="app_name">Smart Home</string>
     <string name="action_settings">Settings</string>
     <string name="edit_message">Enter a message</string>
@@ -11,4 +11,10 @@
     <string name="welcome_voice">Hello,freedom,nice to see you again!</string>
     <string name="music_start_voice">music started</string>
     <string name="music_pause_voice">music paused</string>
+    <string name="ble_not_supported">ble not supported</string>
+    <string name="error_bluetooth_not_supported">bluetooth not supported</string>
+
+    <string name="error">error</string>
+    <string name="light_up">light up</string>
+    <string name="light_off">light off</string>
 </resources>

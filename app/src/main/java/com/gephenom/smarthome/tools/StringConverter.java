@@ -69,19 +69,15 @@ public class StringConverter {
      * @param String src Byte字符串，每个Byte之间没有分隔符 
      * @return byte[] 
      */  
-    public static byte[] hexStr2Bytes(String src)
-    {  
-        int m=0,n=0;  
-        int l=src.length()/2;  
-        System.out.println(l);
-        byte[] ret = new byte[l];  
-        for (int i = 0; i < l; i++)  
-        {  
-            m=i*2+1;  
-            n=m+1;  
-            ret[i] = Byte.decode("0x" + src.substring(i*2, m) + src.substring(m,n));
-        }  
-        return ret;  
+    public static byte[] hexStr2Bytes(String s)
+    {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
     }  
   
     /** 

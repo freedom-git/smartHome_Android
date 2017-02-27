@@ -9,4 +9,9 @@
     <string name="welcome_voice">您好！欢迎使用智能家居系统。</string>
     <string name="music_start_voice">音乐开始了</string>
     <string name="music_pause_voice">音乐暂停了</string>
+
+    <string name="error">发生错误了</string>
+    <string name="light_up">禀报皇上，灯打开了</string>
+    <string name="light_off">皇上圣明，灯关上了</string>
+
 </resources>

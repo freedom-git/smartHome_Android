@@ -37,7 +37,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 
 public class MyActivity extends AppCompatActivity{
@@ -66,18 +68,28 @@ public class MyActivity extends AppCompatActivity{
     public int musicPlayIndex=0;
     public String musicMode="random";
 
+    //灯光控制
+    public ArrayList<String> light =  new ArrayList<String>();
+
     //温度控制相关参数
     public float temValue = 0;//当前温度值
     public boolean autoTemControl = false;//自动控温开关
     public int maxTem = 29;//自动控温温度上限
     public int minTem = 28;//自动控温温度上下限
-    public String airConditioningStatus = "off";
 
     //湿度控制相关参数
     public float humValue = 0;//当前湿度值
     public boolean autoHumControl = false;//自动控湿开关
     public int maxHum = 80;//自动控湿湿度上限
     public int minHum = 60;//自动控湿湿度上下限
+
+    //空调控制相关参数
+    public String airConditioningStatus = "off";
+    public String airConditioningMode = "coldMode";
+    public int airConditioningWindGrade = 3;
+    public boolean airConditioningWindAutoDirection = false;
+    public byte settingTem = 24;
+
 
 
     @Override
@@ -103,23 +115,32 @@ public class MyActivity extends AppCompatActivity{
         socketIo.mSocket.on("musicCtrl", musicCtrlListener);
         socketIo.mSocket.on("airCtrl", airCtrlListener);
         socketIo.mSocket.on("memberManage", memberManageListener);
+        socketIo.mSocket.on("lightCtrl", lightListener);
         socketIo.mSocket.connect();
-        SpeechUtility.createUtility(MyActivity.this, SpeechConstant.APPID+"=57f314f0");
+        addLogToScreen("连接服务器成功");
+
+        StringBuffer param = new StringBuffer();
+        param.append("appid="+getString(R.string.app_id));
+        param.append(",");
+        // 设置使用v5+
+        param.append(SpeechConstant.ENGINE_MODE+"="+SpeechConstant.MODE_MSC);
+        SpeechUtility.createUtility(MyActivity.this, param.toString());
+
         //语音合成对象实例
-        speechSynthesis = new SpeechSynthesis(MyActivity.this,getString(R.string.voicer));
+        speechSynthesis = new SpeechSynthesis(this,getString(R.string.voicer));
         //语音识别对象实例
         //speechRecognize = new SpeechRecognize(MyActivity.this,this);
         //语音唤醒对象实例
         speechWake = new SpeechWake(this);
         //音乐播放对象实例
         myMediaPlayer = new MyMediaPlayer(this);
-
-
         //Bluetooth对象实例
         bluetooth = new Bluetooth(this,socketIo);
         //AirConditioner实例
         airConditioner = new AirConditioner(this);
 
+        //初始化灯光数组
+        light.add(0,"off");
 
         speechSynthesis.myStartSpeaking(getString(R.string.welcome_voice));
 
@@ -238,12 +259,11 @@ public class MyActivity extends AppCompatActivity{
                             myMediaPlayer.cancel();
                             break;
                         case "back":
-                            bluetooth.connectBLE.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
+                            bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
                             break;
                     }
 
-                    EditText editText = (EditText) findViewById(R.id.edit_message);
-                    editText.setText(event);
+                    addLogToScreen(event);
                 }
             });
         }
@@ -296,36 +316,48 @@ public class MyActivity extends AppCompatActivity{
                             airConditioner.stop();
                             socketIo.mSocket.emit("airCtrl", Tools.getJsonFromString("{'event':'temperatureAutoCtrlStatusUpdate','temperatureAutoCtrlStatus':"+autoTemControl+",'direction':'up'}"));
                             break;
-                        case "getIndoorData":
+                        case "startWork":
+                            airConditioner.start();
                             break;
-                        case "setTemRange":
-
+                        case "stopWork":
+                            airConditioner.stop();
                             break;
-                        case "changeMusic":
-                            try {
-                                myMediaPlayer.setMusicUrl(musicList.get(musicPlayIndex));
-                                //speechSynthesis.myStartSpeaking("music:"+ TextUtils.join(" ",musicList.get(musicPlayIndex).split("_-_")[1].split(".mp3")[0].split("_"))+",by "+TextUtils.join(" ",musicList.get(musicPlayIndex).split("_-_")[0].split("_")));
-                            } catch (IOException e) {
-                                speechSynthesis.myStartSpeaking("online music error");
-                                e.printStackTrace();
-                            }
+                        case "addTemperature":
+                            airConditioner.addTemperature();
                             break;
-                        case "lastMusic":
-                            myMediaPlayer.lastOrNext("last");
+                        case "reduceTemperature":
+                            airConditioner.reduceTemperature();
                             break;
-                        case "nextMusic":
-                            myMediaPlayer.lastOrNext("next");
+                        case "coldMode":
+                            airConditioner.changeMode(event);
                             break;
-                        case "stop":
-                            myMediaPlayer.cancel();
+                        case "windMode":
+                            airConditioner.changeMode(event);
                             break;
-                        case "back":
-                            bluetooth.connectBLE.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
+                        case "reduceHumidityMode":
+                            airConditioner.changeMode(event);
+                            break;
+                        case "heatMode":
+                            airConditioner.changeMode(event);
+                            break;
+                        case "windDirection":
+                            airConditioner.windDirection();
+                            break;
+                        case "windDirectionAuto":
+                            airConditioner.windDirectionAuto();
+                            break;
+                        case "wind1":
+                            airConditioner.changeWindGrade(1);
+                            break;
+                        case "wind2":
+                            airConditioner.changeWindGrade(2);
+                            break;
+                        case "wind3":
+                            airConditioner.changeWindGrade(3);
                             break;
                     }
-
-                    EditText editText = (EditText) findViewById(R.id.edit_message);
-                    editText.setText(event);
+                    sendHomeStatus();
+                    addLogToScreen(event);
                 }
             });
         }
@@ -377,7 +409,7 @@ public class MyActivity extends AppCompatActivity{
                             break;
                         case "stopTemAutoCtrl":
                             autoTemControl=false;
-                            bluetooth.connectBLE.writeByte(new byte[]{(byte)0x04,(byte)0x00,(byte)0x08,(byte)0x08,(byte)0x04});
+                            bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0x04,(byte)0x00,(byte)0x08,(byte)0x08,(byte)0x04});
                             socketIo.mSocket.emit("airCtrl", Tools.getJsonFromString("{'event':'temperatureAutoCtrlStatusUpdate','temperatureAutoCtrlStatus':"+autoTemControl+",'direction':'up'}"));
                             break;
                         case "getIndoorData":
@@ -403,13 +435,53 @@ public class MyActivity extends AppCompatActivity{
                         case "stop":
                             myMediaPlayer.cancel();
                             break;
-                        case "back":
-                            bluetooth.connectBLE.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
+                    }
+
+                    addLogToScreen(event);
+                }
+            });
+        }
+    };
+
+    private Emitter.Listener lightListener = new Emitter.Listener() {
+        int lightId;
+        byte lightIdByte;
+        byte lightStatusByte;
+        @Override
+        public void call(final Object... args) {
+            MyActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    String event;
+                    String direction;
+
+                    String lightStatus;
+                    try {
+                        event = data.getString("event");
+                        direction = data.getString("direction");
+                        if(!direction.equals("down")&&!direction.equals("both")){return;}
+
+                        switch (event){
+                            case "lightStatusChange":
+                                lightId = data.getInt("lightId");
+                                lightStatus = data.getString("lightStatus");
+                                light.add(lightId,lightStatus);
+                                break;
+                        }
+
+                    } catch (JSONException e) {
+                        return;
+                    }
+                    switch(event) {
+                        case "lightStatusChange":
+                            if(lightId==0){lightIdByte=(byte)lightId;}
+                            if(light.get(lightId).equals("on")){lightStatusByte=(byte)0x01;}else{lightStatusByte=(byte)0x00;}
+                            bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x02,lightIdByte,lightStatusByte,(byte)0xff});
                             break;
                     }
 
-                    EditText editText = (EditText) findViewById(R.id.edit_message);
-                    editText.setText(event);
+                    addLogToScreen(event);
                 }
             });
         }
@@ -422,8 +494,25 @@ public class MyActivity extends AppCompatActivity{
                 "'direction':'up'," +
                 "'musicStatus':{'musicIndex':"+Integer.toString(musicPlayIndex)+",'status':"+myMediaPlayer.getMediaPlayerState()+",'mode':"+musicMode+"}," +
                 "'temperature':{'value':"+temValue+",'lowerLimit':"+minTem+",'upperLimit':"+maxTem+",'autoCtrlStatus':"+autoTemControl+",'airConditioningStatus':"+airConditioningStatus+"}," +
-                "'humidity':{'value':"+humValue+",'lowerLimit':"+minHum+",'upperLimit':"+maxHum+",'autoCtrlStatus':"+autoHumControl+"}" +
+                "'humidity':{'value':"+humValue+",'lowerLimit':"+minHum+",'upperLimit':"+maxHum+",'autoCtrlStatus':"+autoHumControl+"}," +
+                "'airConditioner':{'mode':"+airConditioningMode+",'windGrade':"+airConditioningWindGrade+",'windAutoDirection':"+airConditioningWindAutoDirection+",'settingTem':"+settingTem+"}" +
                 "}"));
+    }
+
+    public void addLogToScreen(String logMessage){
+        EditText editText = (EditText) findViewById(R.id.edit_message);
+        String logContent = editText.getText().toString();
+        Date date = new Date();
+        DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(getApplicationContext());
+//        String time = android.text.format.DateFormat.format("yyyy-MM-dd hh:mm:ss a", new java.util.Date()).toString();
+        String time = android.text.format.DateFormat.format("MM-dd hh:mm:ss", new java.util.Date()).toString();
+        if(logContent.length()>0){
+            logContent = logContent + "\n" + time +" :  " + logMessage;
+        }else{
+            logContent = time+" :  "+logMessage;
+        }
+
+        editText.setText(logContent);
     }
 
     private void showTip(final String str) {
@@ -442,32 +531,39 @@ public class MyActivity extends AppCompatActivity{
             {
                 // do stuff then
                 // can call h again after work!
-                bluetooth.connectBLE.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
+                if(bluetooth.mBluetoothLeService!=null){
+                    bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xff});
+                }
                 Log.d(TAG, "Loop" );
                 h.postDelayed(this, 60000);
             }
         }, 60000);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        bluetooth.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        bluetooth.onPause();
+    }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
         myMediaPlayer.cancel();
-        myMediaPlayer = null;
 
         socketIo.mSocket.disconnect();
         socketIo.mSocket.off("musicCtrl", musicCtrlListener);
         socketIo.mSocket.off("airCtrl", musicCtrlListener);
 
 
-
-        socketIo=null;
-
-        bluetooth.connectBLE.cancel();
-        bluetooth.connectBLE=null;
-        bluetooth=null;
+        bluetooth.onDestroy();
     }
 
 
