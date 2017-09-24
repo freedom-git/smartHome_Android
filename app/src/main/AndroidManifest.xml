@@ -24,7 +24,9 @@
         android:required="false" />
 
     <application
+        android:name=".main.MyApplicationClass"
         android:allowBackup="true"
+        android:screenOrientation="portrait"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
@@ -32,22 +34,18 @@
         <activity
             android:name=".main.MyActivity"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name=".DisplayMessageActivity"
+            android:name=".main.WebViewActivity"
+            android:screenOrientation="landscape"
             android:label="@string/title_activity_display_message"
-            android:parentActivityName=".main.MyActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".main.MyActivity" />
-            >
+            android:theme="@style/AppTheme.NoActionBar.FullScreen">
         </activity>
 
         <service android:name=".internet.BluetoothLeService"></service>

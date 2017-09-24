@@ -7,6 +7,7 @@ import android.widget.Toast;
 
 import com.gephenom.smarthome.R;
 import com.gephenom.smarthome.main.MyActivity;
+import com.gephenom.smarthome.main.MyApplicationClass;
 import com.gephenom.smarthome.tools.Tools;
 import com.iflytek.cloud.ErrorCode;
 import com.iflytek.cloud.GrammarListener;
@@ -29,8 +30,6 @@ public class SpeechWake {
 
 
     private static String TAG = "freedom";
-    private MyActivity myActivity;
-    private Toast mToast;
     // 语音唤醒对象
     private VoiceWakeuper mIvw;
     // 语音识别对象
@@ -38,13 +37,14 @@ public class SpeechWake {
     // 唤醒结果内容
     private String resultString;
     // 云端语法文件
+
     private String mCloudGrammar = null;
     // 识别结果内容
     private String recoString;
     // 云端语法id
     private String mCloudGrammarID;
     //唤醒词
-    private String wakeWord = "东方不败";
+    private String wakeWord = "智能管家";
 
     // 设置门限值 ： 门限值越低越容易被唤醒
     private final static int MAX = 60;
@@ -54,18 +54,19 @@ public class SpeechWake {
     private String keep_alive = "1";
     private String ivwNetMode = "0";
 
-    public SpeechWake(MyActivity activity) {
+    private MyApplicationClass myApplication;
+
+    public SpeechWake(MyApplicationClass myapplicationClass) {
         Log.d(TAG, "SpeechWake");
-        myActivity=activity;
-        myActivity.addLogToScreen("语音唤醒模块初始化...");
-        myActivity.addLogToScreen("唤醒词："+wakeWord);
-        mToast = Toast.makeText(myActivity,"", Toast.LENGTH_SHORT);
+        myApplication=myapplicationClass;
+        myApplication.addLog("语音唤醒模块初始化...");
+        myApplication.addLog("唤醒词："+wakeWord);
         // 初始化唤醒对象
-        mIvw = VoiceWakeuper.createWakeuper(myActivity, null);
+        mIvw = VoiceWakeuper.createWakeuper(myApplication, null);
         // 初始化识别对象---唤醒+识别,用来构建语法
-        mAsr = SpeechRecognizer.createRecognizer(myActivity, null);
+        mAsr = SpeechRecognizer.createRecognizer(myApplication, null);
         // 初始化语法文件
-        mCloudGrammar = Tools.readFile(myActivity,"wake_grammar_sample.abnf", "utf-8");
+        mCloudGrammar = Tools.readFile(myApplication,"wake_grammar_sample.abnf", "utf-8");
 
         buildGrammar();
     }
@@ -78,7 +79,7 @@ public class SpeechWake {
         // 开始构建语法
         ret = mAsr.buildGrammar("abnf", mCloudGrammar, grammarListener);
         if (ret != ErrorCode.SUCCESS) {
-            showTip("语法构建失败,错误码：" + ret);
+            myApplication.addLog("语法构建失败,错误码：" + ret);
         }
     }
 
@@ -87,11 +88,10 @@ public class SpeechWake {
         public void onBuildFinish(String grammarId, SpeechError error) {
             if (error == null) {
                     mCloudGrammarID = grammarId;
-                //showTip("语法构建成功：" + grammarId);
-                myActivity.addLogToScreen("语法构建成功：" + grammarId);
+                myApplication.addLog("语法构建成功：" + grammarId);
                 startWake();
             } else {
-                showTip("语法构建失败,错误码：" + error.getErrorCode());
+                myApplication.addLog("语法构建失败,错误码：" + error.getErrorCode());
             }
         }
     };
@@ -102,8 +102,8 @@ public class SpeechWake {
             resultString = "";
             recoString = "";
 
-            String resPath = ResourceUtil.generateResourcePath(myActivity,
-                    ResourceUtil.RESOURCE_TYPE.assets, "ivw/" + myActivity.getString(R.string.app_id) + ".jet");
+            String resPath = ResourceUtil.generateResourcePath(myApplication,
+                    ResourceUtil.RESOURCE_TYPE.assets, "ivw/" + myApplication.getString(R.string.app_id) + ".jet");
             // 清空参数
             mIvw.setParameter(SpeechConstant.PARAMS, null);
             // 设置识别引擎
@@ -111,7 +111,7 @@ public class SpeechWake {
             // 设置唤醒资源路径
             mIvw.setParameter(SpeechConstant.IVW_RES_PATH, resPath);
             // 唤醒门限值，根据资源携带的唤醒词个数按照“id:门限;id:门限”的格式传入
-            mIvw.setParameter(SpeechConstant.IVW_THRESHOLD, "0:"+ curThresh+";1:"+ curThresh);
+            mIvw.setParameter(SpeechConstant.IVW_THRESHOLD, "0:"+ curThresh+";1:"+ curThresh+";2:"+ curThresh+";3:"+ curThresh+";4:"+ curThresh);
             // 设置唤醒模式
             mIvw.setParameter(SpeechConstant.IVW_SST, "oneshot");
             // 设置返回结果格式
@@ -128,16 +128,16 @@ public class SpeechWake {
                         mCloudGrammarID);
                 mIvw.startListening(mWakeuperListener);
             } else {
-                showTip("请先构建语法");
+                myApplication.addLog("请先构建语法");
             }
 
             // 启动唤醒
            // mIvw.startListening(mWakeuperListener);
 
             Log.d(TAG, "启动唤醒");
-            myActivity.addLogToScreen("等待语音指令中...");
+            myApplication.addLog("等待语音指令中...");
         } else {
-            showTip("唤醒未初始化");
+            myApplication.addLog("唤醒未初始化");
         }
 
         //mIvw.stopListening();
@@ -181,14 +181,13 @@ public class SpeechWake {
 
         @Override
         public void onError(SpeechError error) {
-            showTip(error.getPlainDescription(true));
-            myActivity.speechSynthesis.myStartSpeaking("没听清楚，皇上恕罪");
+            myApplication.addLog(error.getPlainDescription(true));
+            myApplication.speechSynthesis.myStartSpeaking("没听清楚，皇上恕罪");
             //startWake();
         }
 
         @Override
         public void onBeginOfSpeech() {
-            //showTip("开始说话");
             Log.d(TAG, "开始说话:");
         }
 
@@ -199,15 +198,15 @@ public class SpeechWake {
             if (SpeechEvent.EVENT_IVW_RESULT == eventType) {
                 RecognizerResult reslut = ((RecognizerResult)obj.get(SpeechEvent.KEY_EVENT_IVW_RESULT));
                 recoString += parseGrammarResult(reslut.getResultString());
-                myActivity.addLogToScreen("语音识别结果："+recoString);
+                myApplication.addLog("语音识别结果："+recoString);
 
-                if(recoString.equals("没有匹配结果.")){myActivity.speechSynthesis.myStartSpeaking(myActivity.getString(R.string.error));}
-                if(recoString.equals(wakeWord+"打开音乐")){myActivity.nextMusic();}
-                if(recoString.equals(wakeWord+"下一首")){myActivity.nextMusic();}
-                if(recoString.equals(wakeWord+"开灯")){myActivity.bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x02,(byte)0x00,(byte)0x01,(byte)0xff});myActivity.speechSynthesis.myStartSpeaking(myActivity.getString(R.string.light_up));}
-                if(recoString.equals(wakeWord+"关灯")){myActivity.bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x02,(byte)0x00,(byte)0x00,(byte)0xff});myActivity.speechSynthesis.myStartSpeaking(myActivity.getString(R.string.light_off));}
+                if(recoString.equals("没有匹配结果.")){myApplication.speechSynthesis.myStartSpeaking(myApplication.getString(R.string.error));}
+                if(recoString.equals(wakeWord+"打开音乐")){myApplication.myMediaPlayer.lastOrNext("next");}
+                if(recoString.equals(wakeWord+"下一首")){myApplication.myMediaPlayer.lastOrNext("next");}
+                if(recoString.equals(wakeWord+"开灯")){myApplication.bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x02,(byte)0x00,(byte)0x01,(byte)0xff});myApplication.speechSynthesis.myStartSpeaking(myApplication.getString(R.string.light_up));}
+                if(recoString.equals(wakeWord+"关灯")){myApplication.bluetooth.mBluetoothLeService.writeByte(new byte[]{(byte)0xff,(byte)0x02,(byte)0x00,(byte)0x00,(byte)0xff});myApplication.speechSynthesis.myStartSpeaking(myApplication.getString(R.string.light_off));}
 
-                //showTip(recoString);
+                myApplication.addLog(recoString);
                 startWake();
             }
         }
@@ -253,19 +252,11 @@ public class SpeechWake {
 
 
     private String getResource() {
-        return ResourceUtil.generateResourcePath(myActivity,
-                ResourceUtil.RESOURCE_TYPE.assets, "ivw/"+myActivity.getString(R.string.app_id)+".jet");
+        return ResourceUtil.generateResourcePath(myApplication,
+                ResourceUtil.RESOURCE_TYPE.assets, "ivw/"+myApplication.getString(R.string.app_id)+".jet");
     }
 
-    private void showTip(final String str) {
-        myActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mToast.setText(str);
-                mToast.show();
-            }
-        });
-    }
+
 
     //    @Override
 //    protected void onDestroy() {

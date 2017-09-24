@@ -5,7 +5,7 @@ mode voice;
 root $main;
 $main = $call $open $music|$call $next|$call $lightsUp|$call $lightsDown;
 
-$call = 东方不败|芝麻开门;
+$call = 东方不败|芝麻开门|智能管家|智能家居;
 
 $open = 打开;
 $music = 音乐;

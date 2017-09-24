@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.gephenom.smarthome.R;
 import com.gephenom.smarthome.main.MyActivity;
+import com.gephenom.smarthome.main.MyApplicationClass;
 import com.iflytek.cloud.ErrorCode;
 import com.iflytek.cloud.InitListener;
 import com.iflytek.cloud.SpeechConstant;
@@ -17,6 +18,7 @@ import com.iflytek.cloud.SynthesizerListener;
 public class SpeechSynthesis {
     private  String TAG = "freedom";
     private MyActivity myActivity;
+    private  MyApplicationClass myApplication;
     // 语音合成对象
     private SpeechSynthesizer mTts;
     // 默认发音人
@@ -26,16 +28,16 @@ public class SpeechSynthesis {
     // 播放进度
     private int mPercentForPlaying = 0;
 
-    public SpeechSynthesis(MyActivity activity, String voiceName){
+    public SpeechSynthesis(MyApplicationClass myapplication, String voiceName){
         this.voicer=voiceName;
-        myActivity=activity;
-        myActivity.addLogToScreen("语音合成模块初始化...");
-        mTts = SpeechSynthesizer.createSynthesizer(myActivity, mTtsInitListener);
+        myApplication=myapplication;
+        myApplication.addLog("语音合成模块初始化...");
+        mTts = SpeechSynthesizer.createSynthesizer(myApplication, mTtsInitListener);
         setParam();
     }
 
     public void myStartSpeaking(String text) {
-        myActivity.addLogToScreen("语音合成输出："+text);
+        myApplication.addLog("语音合成输出："+text);
         int code = mTts.startSpeaking(text, mTtsListener);
 //			/**
 //			 * 只保存音频不进行播放接口,调用此接口请注释startSpeaking接口
